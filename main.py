@@ -3,7 +3,7 @@ import requests, os
 
 app = Flask(__name__)
 
-API_KEY = os.environ.get("GROQ_API_KEY")
+API_KEY = os.environ.get("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")
 
 # Serve the frontend
 @app.route('/')
