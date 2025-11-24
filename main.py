@@ -1,11 +1,16 @@
-from flask import Flask, request, jsonify
-import requests
-import os
+from flask import Flask, request, jsonify, send_from_directory
+import requests, os
 
 app = Flask(__name__)
 
 API_KEY = os.environ.get("GROQ_API_KEY")
 
+# Serve frontend
+@app.route('/')
+def index():
+    return send_from_directory('.', 'index.html')
+
+# API endpoint
 @app.route('/rewrite', methods=['POST'])
 def rewrite():
     data = request.get_json()
