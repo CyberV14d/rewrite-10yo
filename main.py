@@ -1,59 +1,50 @@
+import os
 from flask import Flask, request, jsonify, send_from_directory
-import requests, os
+from groq import Groq
 
+# Initialize Flask
 app = Flask(__name__)
 
-API_KEY = os.environ.get("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")
+# Initialize Groq client
+client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 
 # Serve the frontend
-@app.route('/')
+@app.route("/")
 def index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(".", "index.html")
 
-# API endpoint for rewriting text
-@app.route('/rewrite', methods=['POST'])
+
+# API endpoint
+@app.route("/rewrite", methods=["POST"])
 def rewrite():
     data = request.get_json()
-    text = data.get("text", "")
+    text = data.get("text", "").strip()
 
-    if not text.strip():
+    if not text:
         return jsonify({"output": "Please provide some text to rewrite."})
 
-    prompt = f"Rewrite this so that a 10-year-old can understand it, using simple words and short sentences:\n\n{text}"
-
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    body = {
-        "model": "mistral-7b-v0.1",  # <-- switched to Mistral
-        "messages": [
-            {"role": "system", "content": "Rewrite text for a 10-year-old."},
-            {"role": "user", "content": prompt}
-        ]
-    }
+    # Include the "10-year-old" instruction directly in the user message
+    prompt = f"Rewrite this text so that a 10-year-old can understand it, using simple words and short sentences:\n\n{text}"
 
     try:
-        r = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers=headers, json=body, timeout=30
+        chat_completion = client.chat.completions.create(
+            messages=[
+                {"role": "user", "content": prompt},  # no system instruction
+            ],
+            model="mistral-7b-v0.1",
         )
 
-        r.raise_for_status()  # Raise error if HTTP status != 200
-        response_json = r.json()
-
-        if 'choices' in response_json and len(response_json['choices']) > 0:
-            result = response_json['choices'][0]['message']['content']
+        # Get the output text safely
+        if chat_completion.choices and len(chat_completion.choices) > 0:
+            result = chat_completion.choices[0].message.content
         else:
-            result = f"API error: {response_json}"
+            result = "No output returned by the model."
 
-    except requests.exceptions.RequestException as e:
-        result = f"Request error: {str(e)}"
     except Exception as e:
-        result = f"Unexpected error: {str(e)}"
+        result = f"Error contacting Groq API: {str(e)}"
 
     return jsonify({"output": result})
 
+
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=10000)
+    app.run(host="0.0.0.0", port=10000)
