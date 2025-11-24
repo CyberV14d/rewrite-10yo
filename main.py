@@ -23,18 +23,16 @@ def rewrite():
     if not text:
         return jsonify({"output": "Please provide some text to rewrite."})
 
-    # Include the "10-year-old" instruction directly in the user message
-    prompt = f"Rewrite this text so that a 10-year-old can understand it, using simple words and short sentences:\n\n{text}"
+    # Prompt includes "10-year-old" instruction
+    prompt = f"Rewrite this so that a 10-year-old can understand it, using simple words and short sentences:\n\n{text}"
 
     try:
         chat_completion = client.chat.completions.create(
-            messages=[
-                {"role": "user", "content": prompt},  # no system instruction
-            ],
-            model="mistral-7b-v0.1",
+            messages=[{"role": "user", "content": prompt}],
+            model="llama-3.3-70b-versatile",  # <- using LLaMA
         )
 
-        # Get the output text safely
+        # Safely get the AI output
         if chat_completion.choices and len(chat_completion.choices) > 0:
             result = chat_completion.choices[0].message.content
         else:
